@@ -1,0 +1,16 @@
+# Ignore dataset folder
+/dataset
+
+# Ignore specific dataset file
+dataset/etfs.csv
+# Ignore all CSV files in the dataset folder
+dataset/*.csv
+# Ignore all files in the dataset folder
+dataset/*
+# Ignore all files in the dataset folder except etfs.csv
+dataset/!etfs.csv
+# Ignore all files in the dataset folder except etfs.csv and other specific files
+dataset/!etfs.csv
+dataset/!other_file.csv
+# Ignore all files in the dataset folder except etfs.csv and other specific files
+dataset/!other_file.csv

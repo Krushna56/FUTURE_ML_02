@@ -12,9 +12,33 @@ def process_stock_data(file_path, stock_name):
         # Load dataset
         data = pd.read_csv(file_path)
         
-        # Feature selection
-        data['Date'] = pd.to_datetime(data['Date'])
+        # Verify required columns exist
+        required_columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+        if not all(col in data.columns for col in required_columns):
+            raise ValueError(f"Missing required columns. Required: {required_columns}")
+        
+        # Clean and convert Date column
+        try:
+            # First try parsing dates as is
+            data['Date'] = pd.to_datetime(data['Date'])
+        except:
+            try:
+                # Try parsing with different date formats
+                data['Date'] = pd.to_datetime(data['Date'], format='%Y-%m-%d', errors='coerce')
+            except:
+                print(f"Error: Invalid date format in {stock_name}")
+                return None
+        
+        # Drop any rows with invalid dates
+        data = data.dropna(subset=['Date'])
+        
+        if len(data) == 0:
+            raise ValueError(f"No valid data remaining after cleaning for {stock_name}")
+            
+        # Convert dates to ordinal numbers
         data['Date'] = data['Date'].map(pd.Timestamp.toordinal)
+        
+        # Feature selection
         X = data[['Date', 'Open', 'High', 'Low', 'Volume']]
         y = data['Close']
         
