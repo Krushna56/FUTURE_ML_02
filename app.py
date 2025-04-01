@@ -10,7 +10,7 @@ def process_stock_data(file_path, stock_name):
     """Process individual stock dataset and return model metrics"""
     try:
         # Load dataset
-        data = pd.read_csv(file_path)
+        data = pd.read_csv(r"C:\Users\krush\Desktop\Internship\FUTURE_ML_02\Dataset\symbols_valid_meta.csv", encoding="utf-8", on_bad_lines="skip")
         
         # Verify required columns exist
         required_columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
