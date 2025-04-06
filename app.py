@@ -1,124 +1,101 @@
-import numpy as np 
-import pandas as pd 
-# import yfinance as yf
+import numpy as np
+import pandas as pd
 import streamlit as st
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+import os
 
-# Load the model
-model = load_model(r'C:\Users\krush\Desktop\Internship\FUTURE_ML_02\Dataset') 
+st.title("📈 Stock Market Prediction (Custom Dataset + Symbol Dropdown)")
 
-# Streamlit UI
-st.header('Stock Market Prediction')
+# Load the pre-trained model
+model = load_model("Stock Prediction Model.keras")
 
-stock = st.text_input('Enter Stock Symbol', 'B085BCWJV6')
-start = '2012-01-01'
-end = '2022-12-31'
+# Load stock symbols metadata
+meta_df = pd.read_csv("symbols_valid_meta.csv")
 
-# Download data
-data = yf.download(stock, start, end)
+# Filter only traded symbols
+valid_symbols = meta_df[meta_df["Nasdaq Traded"] == "Y"]
 
-# Check if data is fetched properly
-if data.empty:
-    st.error("Stock data not found. Please check the symbol and try again.")
-else:
-    st.subheader('Stock Data')
-    st.write(data)
+# Create dropdown menu
+symbols_list = valid_symbols["Symbol"].dropna().unique()
+selected_symbol = st.selectbox("Select a stock symbol", sorted(symbols_list))
 
-    # Prepare training and testing data
-    data_train = pd.DataFrame(data.Close[0: int(len(data)*0.80)])
-    data_test = pd.DataFrame(data.Close[int(len(data)*0.80): len(data)])
+# Try to load CSV for the selected symbol
+file_path = f"datasets/{selected_symbol}.csv"
+if not os.path.exists(file_path):
+    st.warning(f"No dataset found for symbol: {selected_symbol}. Please make sure {selected_symbol}.csv exists in the datasets folder.")
+    st.stop()
 
-    # If not enough data, stop the process
-    if data_test.empty:
-        st.warning("Not enough data in the test set to proceed.")
-    else:
-        scaler = MinMaxScaler(feature_range=(0,1))
+# Load stock data
+df = pd.read_csv(file_path)
 
-        # Append last 100 days of training data to test set
-        pas_100_days = data_train.tail(100)
+# Check for Date and Close columns
+if 'Date' not in df.columns or 'Close' not in df.columns:
+    st.error("CSV must have 'Date' and 'Close' columns.")
+    st.stop()
 
-        # Check if enough training data is present
-        if pas_100_days.empty or len(data_test) < 1:
-            st.warning("Not enough data to prepare test set.")
-        else:
-            data_test = pd.concat([pas_100_days, data_test], ignore_index=True)
+# Convert Date column
+df['Date'] = pd.to_datetime(df['Date'])
+df = df.sort_values('Date')
 
-            # Scale test data safely
-            if data_test.shape[0] >= 1:
-                data_test_scale = scaler.fit_transform(data_test)
+# Optional Date Filter
+st.subheader("📅 Filter by Date Range (optional)")
+min_date = df['Date'].min().date()
+max_date = df['Date'].max().date()
+start_date = st.date_input("Start Date", value=min_date, min_value=min_date, max_value=max_date)
+end_date = st.date_input("End Date", value=max_date, min_value=min_date, max_value=max_date)
 
-                # Prepare input sequences
-                x = []
-                y = []
+# Filter data
+filtered_df = df[(df['Date'] >= pd.to_datetime(start_date)) & (df['Date'] <= pd.to_datetime(end_date))]
+st.write(f"Showing data from {start_date} to {end_date} ({len(filtered_df)} rows)")
 
-                for i in range(100, data_test_scale.shape[0]):
-                    x.append(data_test_scale[i-100:i])
-                    y.append(data_test_scale[i, 0])
+# Show preview
+st.dataframe(filtered_df[['Date', 'Close']].head())
 
-                if len(x) == 0:
-                    st.warning("Not enough data to create sequences for prediction.")
-                else:
-                    x, y = np.array(x), np.array(y)
+# Check data length
+if len(filtered_df) < 150:
+    st.warning("Please select a longer date range. Need at least 150 rows after filtering.")
+    st.stop()
 
-                    # Make predictions
-                    y_predicted = model.predict(x)
+# Use Close prices
+close_prices = filtered_df['Close'].reset_index(drop=True)
 
-                    st.success("Prediction completed! You can now plot or compare results.")
-                    # (Add plotting code here if needed)
+# Train-test split
+train_size = int(len(close_prices) * 0.80)
+data_train = close_prices[:train_size]
+data_test = close_prices[train_size:]
 
-            else:
-                st.warning("data_test is empty after combining. Cannot scale.")
+# Add last 100 days to test
+past_100_days = data_train[-100:]
+final_test_data = pd.concat([past_100_days, data_test], ignore_index=True)
 
+# Scale data
+scaler = MinMaxScaler(feature_range=(0, 1))
+data_test_scaled = scaler.fit_transform(final_test_data.values.reshape(-1, 1))
 
+# Prepare input
+x_test, y_test = [], []
+for i in range(100, len(data_test_scaled)):
+    x_test.append(data_test_scaled[i-100:i])
+    y_test.append(data_test_scaled[i, 0])
 
+x_test, y_test = np.array(x_test), np.array(y_test)
 
-# import numpy as np 
-# import pandas as pd 
-# import yfinance as yf
-# import streamlit as st
-# from tensorflow.keras.models import load_model  # ✅ Fixed this line
-# from sklearn.preprocessing import MinMaxScaler
+# Predict
+y_predicted = model.predict(x_test)
 
-# # Load the model
-# model = load_model(r'C:\Users\krush\Desktop\stock price prediction\Stock Prediction Model.keras') 
+# Inverse scale
+scale_factor = 1 / scaler.scale_[0]
+y_predicted_actual = y_predicted * scale_factor
+y_test_actual = y_test * scale_factor
 
-# # Streamlit UI
-# st.header('Stock Market Prediction')
-
-# stock = st.text_input('Enter Stock Symbol', 'B085BCWJV6')
-# start = '2012-01-01'
-# end = '2022-12-31'
-
-# # Download data
-# data = yf.download(stock, start, end)
-
-# st.subheader('Stock Data')
-# st.write(data)
-
-# # Prepare training and testing data
-# data_train = pd.DataFrame(data.Close[0: int(len(data)*0.80)])
-# data_test = pd.DataFrame(data.Close[int(len(data)*0.80): len(data)])
-
-# scaler  = MinMaxScaler(feature_range=(0,1))
-
-# # Append last 100 days of training data to test set
-# pas_100_days = data_train.tail(100)
-# data_test = pd.concat([pas_100_days, data_test], ignore_index=True)
-
-# # Scale test data
-# data_test_scale = scaler.fit_transform(data_test)
-
-# x = []
-# y = []
-
-# for i in range(100, data_test_scale.shape[0]):
-#     x.append(data_test_scale[i-100:i])
-#     y.append(data_test_scale[i, 0])
-
-# x, y = np.array(x), np.array(y)
-
-# # You can now run predictions like:
-# # y_predicted = model.predict(x)
-
-# # Plotting and comparison can be added here as a next step
+# Plot
+st.subheader("📊 Actual vs Predicted Closing Prices")
+fig = plt.figure(figsize=(12,6))
+plt.plot(y_test_actual, label='Actual Price')
+plt.plot(y_predicted_actual, label='Predicted Price')
+plt.legend()
+plt.xlabel("Days")
+plt.ylabel("Stock Price")
+st.pyplot(fig)
