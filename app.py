@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model # type: ignore
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import os
@@ -9,7 +9,15 @@ import os
 st.title("📈 Stock Market Prediction (Custom Dataset + Symbol Dropdown)")
 
 # Load the pre-trained model
-model = load_model("Stock Prediction Model.keras")
+model = load_model(r'C:\Users\krush\Desktop\Internship\FUTURE_ML_02\Stock Price Prediction.keras.zip.keras')
+
+
+# Step 1: Load existing .h5 model
+# model = load_model("Stock Prediction Model.h5")  # or your old file
+
+# # Step 2: Save as new .keras format
+# model.save("Stock Prediction Model.keras", save_format="keras")
+
 
 # Load stock symbols metadata
 meta_df = pd.read_csv("symbols_valid_meta.csv")
