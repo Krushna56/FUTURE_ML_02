@@ -9,7 +9,7 @@ import os
 st.title("📈 Stock Market Prediction (Custom Dataset + Symbol Dropdown)")
 
 # Load the pre-trained model
-model = load_model(r'C:\Users\krush\Desktop\Internship\FUTURE_ML_02\Stock Price Prediction.keras.zip.keras')
+model = load_model(r'C:\Users\krush\Desktop\Internship\FUTURE_ML_02\Stock Price Prediction.keras')
 
 
 # Step 1: Load existing .h5 model
