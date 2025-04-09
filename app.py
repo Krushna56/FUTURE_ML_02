@@ -11,6 +11,9 @@ st.title("📈 Stock Market Prediction (Custom Dataset + Symbol Dropdown)")
 # Load the pre-trained model
 model = load_model('stockpriceprediction.keras')
 
+# Save the model in the new .keras format if it doesn't already exist
+if not os.path.exists('stockpriceprediction.keras'):
+    model.save('stockpriceprediction.keras')  # New Keras format
 
 # Step 1: Load existing .h5 model
 # model = load_model("Stock Prediction Model.h5")  # or your old file
