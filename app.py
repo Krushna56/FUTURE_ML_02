@@ -8,19 +8,19 @@ import os
 
 st.title("📈 Stock Market Prediction (Custom Dataset + Symbol Dropdown)")
 
-# Load the pre-trained model
-model = load_model('stockpriceprediction.keras')
+# Check if model file exists and load with error handling
+model_path = "stockpriceprediction.keras"
 
-# Save the model in the new .keras format if it doesn't already exist
-if not os.path.exists('stockpriceprediction.keras'):
-    model.save('stockpriceprediction.keras')  # New Keras format
-
-# Step 1: Load existing .h5 model
-# model = load_model("Stock Prediction Model.h5")  # or your old file
-
-# # Step 2: Save as new .keras format
-# model.save("Stock Prediction Model.keras", save_format="keras")
-
+try:
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found: {model_path}")
+        st.stop()
+    
+    model = load_model(model_path)
+    st.success("Model loaded successfully!")
+except Exception as e:
+    st.error(f"Error loading model: {str(e)}")
+    st.stop()
 
 # Load stock symbols metadata
 meta_df = pd.read_csv("symbols_valid_meta.csv")
